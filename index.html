@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EC4C4C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>IPS Digital Checklists</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="backBtn" class="iconbtn" aria-label="Back" hidden>&#8592;</button>
+  <img src="icons/logo.png" alt="IPS International Packaging Solutions" class="logo" id="homeLogo">
+  <div class="topttl" id="topTitle">Digital Checklists</div>
+  <span id="netState" class="net"></span>
+</header>
+<main id="app"></main>
+<footer class="sitefoot">
+  <b>International Packaging Solutions (PTY) Ltd</b><br>
+  Rynfield, Benoni &middot; <a href="tel:0824505688">082 450 5688</a> &middot; <a href="https://ips-packaging.co.za">ips-packaging.co.za</a>
+</footer>
+<div id="sigModal" class="modal" hidden>
+  <div class="sigbox">
+    <div class="sighead"><b id="sigTitle">Signature</b><span class="muted">Sign with your finger inside the box</span></div>
+    <canvas id="sigCanvas"></canvas>
+    <div class="sigbtns">
+      <button class="btn ghost" id="sigClear">Clear</button>
+      <button class="btn ghost" id="sigCancel">Cancel</button>
+      <button class="btn primary" id="sigSave">Save signature</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast" hidden></div>
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="forms.js"></script>
+<script src="pdf.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
