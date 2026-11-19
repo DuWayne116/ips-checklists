@@ -324,6 +324,7 @@ async function signOff(job, fid, f) {
   if (fid === "ls") job.status = "cert";
   if (fid === "cert") job.status = "done";
   await save(job, true);
+  jfChecklist(job, fid, f);
   toast(job.status === "refused" ? "Load refused – flow stopped" : "Signed off ✔");
   location.hash = `#/job/${encodeURIComponent(job.id)}`;
 }
@@ -392,3 +393,26 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.ser
 if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
 getGPS().then(g => lastGPS = g);
 route();
+
+// ---- Jarvis load feed (fire-and-forget; queued while offline; a failure never blocks or changes the app's normal flow)
+const JF_URL='https://ips-jarvis.ipspackaging.workers.dev/api/loadfeed',JF_KEY='lf_JEyZgpyo6MSohZ9OA3IBut6D0RfqFzEY';let jfBusy=false;
+function jarvisFeed(ev){try{if(!JF_URL||JF_URL.indexOf('__')===0)return;const q=JSON.parse(localStorage.getItem('jfq')||'[]');q.push(ev);localStorage.setItem('jfq',JSON.stringify(q.slice(-50)));setTimeout(jfFlush,0)}catch(e){}}
+async function jfFlush(){if(jfBusy||!navigator.onLine)return;jfBusy=true;try{let q=JSON.parse(localStorage.getItem('jfq')||'[]');
+ while(q.length){let r;try{const c=typeof AbortController=='function'?new AbortController():null,t=c&&setTimeout(()=>c.abort(),10000);
+   r=await fetch(JF_URL,{method:'POST',headers:{'Content-Type':'application/json','X-Feed-Key':JF_KEY},body:JSON.stringify(q[0]),keepalive:true,signal:c?c.signal:undefined});if(t)clearTimeout(t)}catch(e){break}
+  if(r.status>=500||r.status===429)break;q=JSON.parse(localStorage.getItem('jfq')||'[]');q.shift();localStorage.setItem('jfq',JSON.stringify(q))}}catch(e){}finally{jfBusy=false}}
+try{addEventListener('online',jfFlush);setTimeout(jfFlush,3000)}catch(e){}
+function jfChecklist(job, fid, f) {
+  try {
+    const F = job.forms || {}, rw = (F.rw && F.rw.v) || {}, ls = (F.ls && F.ls.v) || {}, ce = (F.cert && F.cert.v) || {}, v = Object.assign({}, rw, ls, ce, f.v || {});
+    const photos = Object.values(F).reduce((a, x) => a + Object.values((x && x.photos) || {}).reduce((b, p) => b + ((p && p.length) || 0), 0), 0);
+    const d = new Date(f.completed || Date.now()), p2 = n => String(n).padStart(2, "0");
+    const done = d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + "T" + p2(d.getHours()) + ":" + p2(d.getMinutes());
+    const c = new Date(job.created || Date.now());
+    jarvisFeed({ source: "checklists", event: fid === "rw" ? (job.status === "refused" ? "load_refused" : "roadworthy_ok") : fid === "ls" ? "secured" : "certificate",
+      rep: job.rep || "", customer: v.consignor || v.transporter || "", location: v.location || "",
+      date: c.getFullYear() + "-" + p2(c.getMonth() + 1) + "-" + p2(c.getDate()), loadmaster: v.loadmaster || "",
+      reg: v.truck_reg || v.vehicle_reg || "", trailer: [v.trailer_reg1 || v.trailer_reg || "", v.trailer_reg2 || ""].filter(Boolean).join("; "),
+      finish: fid === "cert" && v.departure ? v.departure : done, photos, file: (fid === "cert" && v.cert_no) || v.photo_ref || job.rep || "" });
+  } catch (e) {}
+}
